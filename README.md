@@ -1,4 +1,2 @@
 # hello-world
-first step
-
-changed
+This is a Game project.
