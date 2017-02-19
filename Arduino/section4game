@@ -1,0 +1,107 @@
+
+#include <Matrix.h>
+#include <Sprite.h>
+
+
+byte bitmap[4][8] = {
+  {
+    B00000000,
+    B00000000, // runner 1
+    B00010000,
+    B00100000,
+    B00100000,
+    B00100000,
+    B01010000,
+    B00100000
+  }, {
+    B00000000,
+    B00000000, // runner 2
+    B00010000,
+    B01100000,
+    B00110000,
+    B10100000,
+    B01010000,
+    B00001000
+  }, {
+    B00000000,
+    B00000000, // runner 3
+    B00010000,
+    B01100000,
+    B00110000,
+    B00100000,
+    B01010000,
+    B10010000
+  }, {
+    B00000000, // jumping
+    B00100000,
+    B01110000,
+    B00100000,
+    B00110000,
+    B11001000,
+    B00000000,
+    B00000000
+  }
+};
+
+Matrix mtx = Matrix(15, 17, 16); // DIN, CLK, LOAD の各ピン番号
+int pos=0;
+int beforeTime = 0;
+
+void setup() {
+   // LED マトリックスをすべて消灯
+  mtx.clear();
+  Serial.begin(9600);
+
+}
+
+
+void loop() {
+  
+  int currentTime = millis();
+  int bits;
+  int val = analogRead(0);
+  pos+=map(val, 0, 180, -5,4);
+  pos = constrain(pos, -2, 7);
+  
+  if (pos<-1 && currentTime-beforeTime>5000) { //始まって一定時間はGameOverにならない
+    GameOver();
+    beforeTime = currentTime;
+  }
+  
+
+  for (int runform=0; runform<3; runform++){
+    delay(100);
+    for (int row = 0; row < 8; row++) {
+      if (pos<0){
+        bits = bitmap[runform][row] << abs(pos);
+      }else{
+        bits = bitmap[runform][row] >> pos;
+      }
+        
+      for (int i = 0; i < 8; i++) {
+        
+        int state = (bits >> i) & 0b0000000001;
+        mtx.write(row, i, state); // (i,j) の位置の LED を点灯
+        mtx.write(i,7, HIGH); //左端の一列を点灯させる
+        mtx.write(i,6, i%2); // 左端から２列目の一部を点灯させる
+      } 
+    }
+  }
+ 
+}
+
+void GameOver(){//GameOver
+  int Time;
+  int startTime = millis();
+  while (Time-startTime < 2000){     
+    for (int i = 0; i < 8; i++) {
+      for (int j = 0; j < 8; j++) {
+         mtx.write(i,j, HIGH);
+      }
+    }
+    Time = millis();
+  }
+  
+  mtx.clear();
+  delay(500);
+}
